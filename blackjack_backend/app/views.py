@@ -5,14 +5,23 @@ from django.views.decorators.csrf import csrf_exempt
 
 import json
 
+from app.models import Action1
+
 @csrf_exempt
 def get_action(request):
     if request.method == 'POST':
         payload = json.loads(request.body)
-        player_card = payload['player']
-        dealer_card = payload['dealer']
+        # method to validate response?
+        # how to request to db? 
+            # for remote db?
+        # map Queen, King, Jack to the value 10
+        p_cards = payload['player_cards']  # refactor because array, instead of single value
+        d_card = payload['dealer_card']
+
+        # Action1.objects.get(player_cards=p_cards, dealer_cards=d_card)
+
         try:
-            message = { 'action': 'cum'}
+            message = { 'action': 'post on reddit'}
             httpcode = HTTPStatus.OK
         except:
             message = { 'Error': 'Internal Server Error'}
