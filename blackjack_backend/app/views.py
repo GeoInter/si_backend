@@ -13,11 +13,11 @@ from app.models import Strategy
 def get_action(request, format=json):
     payload = json.loads(request.body)
         
-    p_cards = payload['player_cards']
-    d_card = payload['dealer_card']
-    nrDecks = payload['nrDecks']
-    isSoft = payload['isSoft']
-    isDAS = payload['isDAS']
+    p_cards = payload['player_cards'] # array
+    d_card = payload['dealer_card'] # single element 2-10 or A
+    nrDecks = payload['nrDecks'] # 1,2 or 4
+    isSoft = payload['isSoft'] # boolean
+    isDAS = payload['isDAS'] # boolean
 
     player_hand = ""
     if("A" in p_cards):
@@ -52,6 +52,12 @@ def get_action(request, format=json):
         strategy = Strategy.objects.get(player_cards=player_hand, dealer_cards=d_card, rulesetId=rulesetId)
         message = { 'action': strategy.action}
         httpcode = HTTPStatus.OK
+    except Strategy.DoesNotExist:
+        message = { 'Error': 'No Strategy for this scenario found'}
+        httpcode = HTTPStatus.INTERNAL_SERVER_ERROR
+    except Strategy.MultipleObjectsReturned:
+        message = { 'Error': 'Found multiple Strategies instead of one - database redundancy'}
+        httpcode = HTTPStatus.INTERNAL_SERVER_ERROR
     except:
         message = { 'Error': 'Internal Server Error'}
         httpcode = HTTPStatus.INTERNAL_SERVER_ERROR
