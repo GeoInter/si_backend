@@ -27,19 +27,24 @@ def get_action(request, format=json):
     player_hand = ""
     if len(p_cards) != len(set(p_cards)) and len(p_cards) == 2:
         # contains at least one pair of the same value
-        print("found a pair")
-        player_hand = p_cards[0] + "-" + p_cards[1]
+        if("11" in p_cards):
+            player_hand = "A-A"
+        else:
+            player_hand = p_cards[0] + "-" + p_cards[1]
+        print("found a pair: " + player_hand)
     else:
         sum = 0
         if ("A" in p_cards):
             aceIndex = p_cards.index("A")
+        elif("11" in p_cards):
+            aceIndex = p_cards.index("11")
         else:
             aceIndex = -1
         for i in range(len(p_cards)):
             if i != aceIndex: # skip ace for addition of values
                 sum += int(p_cards[i])
 
-        if ("A" in p_cards):
+        if ("A" in p_cards or "11" in p_cards):
             player_hand = "A-" + str(sum)
         elif sum <= 7: 
             player_hand = "5-7"
@@ -104,7 +109,7 @@ def is_JSON_valid(payload):
         return False
         
     dealer_hand = payload['dealer_card']
-    pattern = re.compile('^([2-9]|10|A)$')
+    pattern = re.compile('^([2-9]|10|A|11)$')
     if(not pattern.match(dealer_hand)):
         return False
         
