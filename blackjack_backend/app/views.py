@@ -18,8 +18,8 @@ def get_action(request, format=json):
     if(not is_JSON_valid(payload)):
         return sendResponse(HTTPStatus.BAD_REQUEST, {'Error': 'Errors in transmitted JSON'})
 
-    p_cards = payload['player_cards'] # array
-    d_card = payload['dealer_card'] # single element 2-10 or A
+    p_cards = payload['player_cards']
+    d_card = payload['dealer_card']
     nrDecks = payload['nrDecks']
     isSoft = payload['isSoft']
     isDAS = payload['isDAS']
@@ -31,7 +31,7 @@ def get_action(request, format=json):
             player_hand = "A-A"
         else:
             player_hand = p_cards[0] + "-" + p_cards[1]
-        print("found a pair: " + player_hand)
+        #print("found a pair: " + player_hand)
     else:
         sum = 0
         if ("A" in p_cards):
@@ -48,9 +48,15 @@ def get_action(request, format=json):
             player_hand = "A-" + str(sum)
         elif sum <= 7: 
             player_hand = "5-7"
+        elif sum > 21:
+            return sendResponse(HTTPStatus.BAD_REQUEST, { 'Error': "player hand already exceeds 21 with a value of: " + str(sum)})
+        elif not isSoft and sum >= 18:
+            player_hand = "18-21"
+        elif isSoft and sum >= 17:
+            player_hand = "17-21"
         else:
             player_hand = str(sum)
-        print("no pair - player hand is: " + player_hand)
+        #print("no pair - player hand is: " + player_hand)
     
 
     isSoftInt = int(isSoft)
@@ -73,10 +79,7 @@ def get_action(request, format=json):
 @api_view(['POST'])
 def set_strat(request, format=json):
     payload = json.loads(request.body)
-        # method to validate response?
-        # how to request to db? 
-            # for remote db?
-        # map Queen, King, Jack to the value 10
+        
     p_cards = payload['player_cards']
     d_card = payload['dealer_card']
     action = payload['action']
