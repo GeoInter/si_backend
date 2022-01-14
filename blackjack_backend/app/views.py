@@ -24,6 +24,7 @@ def get_action(request, format=json):
     isSoft = payload['isSoft']
     isDAS = payload['isDAS']
 
+    # convert playerhand 
     player_hand = ""
     if len(p_cards) != len(set(p_cards)) and len(p_cards) == 2:
         # contains at least one pair of the same value
@@ -31,7 +32,7 @@ def get_action(request, format=json):
             player_hand = "A-A"
         else:
             player_hand = p_cards[0] + "-" + p_cards[1]
-        #print("found a pair: " + player_hand)
+        print("found a pair: " + player_hand)
     else:
         sum = 0
         if ("A" in p_cards):
@@ -56,15 +57,22 @@ def get_action(request, format=json):
             player_hand = "17-21"
         else:
             player_hand = str(sum)
-        #print("no pair - player hand is: " + player_hand)
+        print("no pair - player hand is: " + player_hand)
     
+
+    # convert dealer hand
+    if("11" in d_card):
+        dealer_hand = "A"
+    else:
+        dealer_hand = d_card
+
 
     isSoftInt = int(isSoft)
     isDASInt = int(isDAS)
     rulesetId = nrDecks * 100 + isSoftInt * 10 + isDASInt
 
     try:
-        strategy = Strategy.objects.get(player_cards=player_hand, dealer_cards=d_card, rulesetId=rulesetId)
+        strategy = Strategy.objects.get(player_cards=player_hand, dealer_cards=dealer_hand, rulesetId=rulesetId)
         return sendResponse(HTTPStatus.OK, { 'action': strategy.action})
     except Strategy.DoesNotExist:
         return sendResponse(HTTPStatus.INTERNAL_SERVER_ERROR, { 'Error': 'No Strategy for this scenario found'})
