@@ -11,10 +11,13 @@ from app.models import Strategy
 @csrf_exempt
 @api_view(['POST'])
 def get_action(request, format=json):
-    payload = json.loads(request.body)
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        return createResponse(HTTPStatus.BAD_REQUEST, {'Error': 'Transmitted JSON is invalid'})
 
     if(not is_JSON_valid(payload)):
-        return sendResponse(HTTPStatus.BAD_REQUEST, {'Error': 'Errors in transmitted JSON'})
+        return createResponse(HTTPStatus.BAD_REQUEST, {'Error': 'Errors in transmitted JSON'})
 
     p_cards = payload['player_cards']
     d_card = payload['dealer_card']
@@ -24,16 +27,15 @@ def get_action(request, format=json):
 
     # convert playerhand 
     player_hand = ""
-    if len(p_cards) != len(set(p_cards)) and len(p_cards) == 2:
+    if(len(p_cards) != len(set(p_cards)) and len(p_cards) == 2):
         # contains at least one pair of the same value
         if("11" in p_cards):
             player_hand = "A-A"
         else:
             player_hand = p_cards[0] + "-" + p_cards[1]
-        #print("found a pair: " + player_hand)
     else:
         sum = 0
-        if ("A" in p_cards):
+        if("A" in p_cards):
             aceIndex = p_cards.index("A")
         elif("11" in p_cards):
             aceIndex = p_cards.index("11")
@@ -43,19 +45,18 @@ def get_action(request, format=json):
             if i != aceIndex: # skip ace for addition of values
                 sum += int(p_cards[i])
 
-        if ("A" in p_cards or "11" in p_cards):
+        if("A" in p_cards or "11" in p_cards):
             player_hand = "A-" + str(sum)
-        elif sum <= 7: 
+        elif(sum <= 7): 
             player_hand = "5-7"
-        elif sum > 21:
-            return sendResponse(HTTPStatus.BAD_REQUEST, { 'Error': "player hand already exceeds 21 with a value of: " + str(sum)})
-        elif not isSoft and sum >= 18:
+        elif(sum > 21):
+            return createResponse(HTTPStatus.BAD_REQUEST, { 'Error': "player hand already exceeds 21 with a value of: " + str(sum)})
+        elif(not isSoft and sum >= 18):
             player_hand = "18-21"
-        elif isSoft and sum >= 17:
+        elif(isSoft and sum >= 17):
             player_hand = "17-21"
         else:
             player_hand = str(sum)
-        #print("no pair - player hand is: " + player_hand)
     
 
     # convert dealer hand
@@ -71,45 +72,13 @@ def get_action(request, format=json):
 
     try:
         strategy = Strategy.objects.get(player_cards=player_hand, dealer_cards=dealer_hand, rulesetId=rulesetId)
-        return sendResponse(HTTPStatus.OK, { 'action': strategy.action})
+        return createResponse(HTTPStatus.OK, { 'action': strategy.action})
     except Strategy.DoesNotExist:
-        return sendResponse(HTTPStatus.INTERNAL_SERVER_ERROR, { 'Error': 'No Strategy for this scenario found'})
+        return createResponse(HTTPStatus.INTERNAL_SERVER_ERROR, { 'Error': 'No Strategy for this scenario found'})
     except Strategy.MultipleObjectsReturned:
-        return sendResponse(HTTPStatus.INTERNAL_SERVER_ERROR, { 'Error': 'Found multiple Strategies instead of one - database redundancy'})
+        return createResponse(HTTPStatus.INTERNAL_SERVER_ERROR, { 'Error': 'Found multiple Strategies instead of one - database redundancy'})
     except:
-        return sendResponse(HTTPStatus.INTERNAL_SERVER_ERROR, { 'Error': 'Internal Server Error'})
-
-
-
-@csrf_exempt
-@api_view(['POST'])
-def set_strat(request, format=json):
-    payload = json.loads(request.body)
-        
-    p_cards = payload['player_cards']
-    d_card = payload['dealer_card']
-    action = payload['action']
-    nrDecks = payload['nrDecks']
-    isSoft = payload['isSoft']
-    isDAS = payload['isDAS']
-
-    isSoftInt = int(isSoft)
-    isDASInt = int(isDAS)
-    rulesetId = nrDecks * 100 + isSoftInt * 10 + isDASInt
-
-    try:
-        strategy = Strategy(player_cards=p_cards, dealer_cards=d_card, action=action, rulesetId=rulesetId)
-        strategy.save()
-
-        message = { 'Success': 'cool'}
-        httpcode = HTTPStatus.OK
-    except:
-        message = { 'Error': 'Internal Server Error'}
-        httpcode = HTTPStatus.INTERNAL_SERVER_ERROR
-    response = JsonResponse(message)
-    response.status_code = httpcode
-    return response
-
+        return createResponse(HTTPStatus.INTERNAL_SERVER_ERROR, { 'Error': 'Internal Server Error'})
 
 
 def is_JSON_valid(payload):
@@ -123,13 +92,15 @@ def is_JSON_valid(payload):
         return False
     
     player_hand = payload['player_cards']
+    if(len(player_hand) > 7):
+        return False
     for i in range(len(player_hand)):
         if(not pattern.match(player_hand[i])):
             return False
         
     return True
 
-def sendResponse(httpcode, message):
+def createResponse(httpcode, message):
     response = JsonResponse(message)
     response.status_code = httpcode
     return response

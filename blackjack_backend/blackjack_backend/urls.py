@@ -21,7 +21,6 @@ from app import views
 urlpatterns = [
     path('admin', admin.site.urls),
     path('api/action', views.get_action),
-    path('api/setstrat', views.set_strat)
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
