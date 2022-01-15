@@ -1,7 +1,5 @@
 from http import HTTPStatus
-from django.http import response
 from django.http.response import JsonResponse
-from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 
@@ -32,7 +30,7 @@ def get_action(request, format=json):
             player_hand = "A-A"
         else:
             player_hand = p_cards[0] + "-" + p_cards[1]
-        print("found a pair: " + player_hand)
+        #print("found a pair: " + player_hand)
     else:
         sum = 0
         if ("A" in p_cards):
@@ -57,7 +55,7 @@ def get_action(request, format=json):
             player_hand = "17-21"
         else:
             player_hand = str(sum)
-        print("no pair - player hand is: " + player_hand)
+        #print("no pair - player hand is: " + player_hand)
     
 
     # convert dealer hand
@@ -123,6 +121,11 @@ def is_JSON_valid(payload):
     pattern = re.compile('^([2-9]|10|A|11)$')
     if(not pattern.match(dealer_hand)):
         return False
+    
+    player_hand = payload['player_cards']
+    for i in range(len(player_hand)):
+        if(not pattern.match(player_hand[i])):
+            return False
         
     return True
 
