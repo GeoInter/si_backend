@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  db:
+    restart: always
+    image: mysql:5.7
+    volumes:
+      - ./data/db:/var/lib/mysql
+    ports:
+      - '3306:3306'
+    environment:
+      - MYSQL_ROOT_PASSWORD=12345
+      - MYSQL_HOST=localhost
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=mysql
+      - MYSQL_ROOT_HOST=%
+  web:
+    restart: on-failure
+    build: .
+    command: python blackjack_backend/manage.py runserver 0.0.0.0:8000
+    image: ${DOCKERID}/blackjack-backend
+    volumes:
+      - .:/blackjack_backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
