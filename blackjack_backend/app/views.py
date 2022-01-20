@@ -1,3 +1,4 @@
+from asyncio.log import logger
 from http import HTTPStatus
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -14,7 +15,7 @@ def get_action(request, format=json):
     try:
         payload = json.loads(request.body)
     except json.JSONDecodeError:
-        return createResponse(HTTPStatus.BAD_REQUEST, {'Error': 'Transmitted JSON is invalid'})
+        return createResponse(HTTPStatus.BAD_REQUEST, {'Error': 'JSON Decode Error'})
 
     if(not is_JSON_valid(payload)):
         return createResponse(HTTPStatus.BAD_REQUEST, {'Error': 'Errors in transmitted JSON'})
@@ -50,6 +51,7 @@ def get_action(request, format=json):
         elif(sum <= 7): 
             player_hand = "5-7"
         elif(sum > 21):
+            logger.error('playerhand exceeds 21: ' + str(sum))
             return createResponse(HTTPStatus.BAD_REQUEST, { 'Error': "player hand already exceeds 21 with a value of: " + str(sum)})
         elif(not isSoft and sum >= 18):
             player_hand = "18-21"
@@ -72,12 +74,16 @@ def get_action(request, format=json):
 
     try:
         strategy = Strategy.objects.get(player_cards=player_hand, dealer_cards=dealer_hand, rulesetId=rulesetId)
+        logger.info('Found strategy for' + str(payload))
         return createResponse(HTTPStatus.OK, { 'action': strategy.action})
-    except Strategy.DoesNotExist:
+    except Strategy.DoesNotExist as notExist:
+        logger.error(str(notExist) + ' Received JSON: ' + str(payload))
         return createResponse(HTTPStatus.INTERNAL_SERVER_ERROR, { 'Error': 'No Strategy for this scenario found'})
-    except Strategy.MultipleObjectsReturned:
+    except Strategy.MultipleObjectsReturned as multiRes:
+        logger.error(str(multiRes) + ' Received JSON: ' + str(payload))
         return createResponse(HTTPStatus.INTERNAL_SERVER_ERROR, { 'Error': 'Found multiple Strategies instead of one - database redundancy'})
-    except:
+    except Exception as e:
+        logger.error(str(e) + ' Received JSON: ' + str(payload))
         return createResponse(HTTPStatus.INTERNAL_SERVER_ERROR, { 'Error': 'Internal Server Error'})
 
 
